@@ -4,10 +4,150 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vector Pong Arena</title>
-    <link rel="stylesheet" href="style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        /* CSS for layout, aesthetics, and animations */
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-bg-color: rgba(22, 33, 62, 0.95);
+            --table-color: #16213e;
+            --accent-color: #0f3460;
+            --highlight-color: #e94560;
+            --text-color: #ffffff;
+            --glow-color: rgba(233, 69, 96, 0.7);
+            --font-family: 'Press Start 2P', cursive;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: var(--font-family);
+            color: var(--text-color);
+            overflow: hidden;
+            position: relative;
+            background-color: var(--bg-color);
+            transition: background-color 0.5s ease;
+        }
+
+        /* --- THEMES (Animations and Backgrounds) --- */
+        body.theme-space { background-image: radial-gradient(1px 1px at 20px 30px, #fff, transparent), radial-gradient(1px 1px at 40px 70px, #fff, transparent), radial-gradient(2px 2px at 90px 40px, #fff, transparent), radial-gradient(1px 1px at 130px 180px, #ddd, transparent), radial-gradient(1px 1px at 160px 120px, #ddd, transparent); background-repeat: repeat, repeat; background-size: 250px 250px, 500px 500px; animation: move-close-stars 120s linear infinite, move-far-stars 240s linear infinite; }
+        body.theme-space::before, body.theme-space::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-repeat: no-repeat; mix-blend-mode: screen; }
+        body.theme-space::before { background-image: radial-gradient(circle at 20% 30%, rgba(233, 69, 96, 0.25), transparent 40%); animation: move-nebula-1 150s ease-in-out infinite alternate; }
+        body.theme-space::after { background-image: radial-gradient(circle at 80% 70%, rgba(60, 120, 255, 0.25), transparent 40%); animation: move-nebula-2 180s ease-in-out infinite alternate; }
+        body.theme-synthwave { background: linear-gradient(to bottom, #2c003e, #5a1846, #9c2759, #e94560); }
+        body.theme-synthwave::before, body.theme-synthwave::after { content: ''; position: absolute; left: 0; width: 100%; z-index: -1; }
+        body.theme-synthwave::before { bottom: 0; height: 40vh; background: radial-gradient(circle at 50% 150%, #ffcc00, transparent 40%); animation: sun-glow 5s ease-in-out infinite alternate; }
+        body.theme-synthwave::after { bottom: 0; height: 50vh; background: linear-gradient(to top, rgba(0, 255, 255, 0.2) 1px, transparent 1px), linear-gradient(to right, rgba(0, 255, 255, 0.2) 1px, transparent 1px); background-size: 40px 20px; transform: perspective(300px) rotateX(60deg); transform-origin: bottom center; animation: move-grid 8s linear infinite; }
+        body.theme-jungle { background-color: #013220; }
+        body.theme-jungle::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-image: linear-gradient(135deg, rgba(57, 255, 20, 0.1) 2px, transparent 2px), linear-gradient(225deg, rgba(57, 255, 20, 0.1) 2px, transparent 2px); background-size: 60px 60px; animation: move-vines 20s linear infinite; }
+        body.theme-bloodmoon { background-color: #1a1a1a; }
+        body.theme-bloodmoon::before, body.theme-bloodmoon::after { content: ''; position: absolute; left: 0; width: 100%; height: 100%; z-index: -1; }
+        body.theme-bloodmoon::before { top: 10%; left: 50%; width: 200px; height: 200px; margin-left: -100px; background-color: #c0392b; border-radius: 50%; box-shadow: 0 0 50px #c0392b, 0 0 100px #e74c3c; }
+        body.theme-bloodmoon::after { top: 0; background: linear-gradient(rgba(44, 44, 44, 0.3) 0%, transparent 100%); background-size: 100% 200px; animation: move-clouds 60s linear infinite; }
+        body.theme-daylight { background: linear-gradient(to bottom, #87CEEB, #B0E0E6); }
+        body.theme-daylight::before, body.theme-daylight::after { content: ''; position: absolute; left: 0; width: 200%; height: 100%; z-index: -1; background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, transparent 40%), radial-gradient(circle at 70% 40%, rgba(255,255,255,0.7) 0%, transparent 30%); background-repeat: no-repeat; }
+        body.theme-daylight::before { animation: move-clouds-day 80s linear infinite; }
+        body.theme-daylight::after { animation: move-clouds-day-2 120s linear infinite; }
+
+        /* --- UI Elements --- */
+        h1 { font-size: 2.5rem; color: var(--highlight-color); text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color); margin-bottom: 0; animation: flicker 1.5s infinite alternate; }
+        #win-streak-display { font-size: 0.8rem; margin-top: 0.5rem; margin-bottom: 1rem; color: var(--highlight-color); text-shadow: 0 0 5px var(--glow-color); }
+        #top-bar { position: absolute; top: 1rem; right: 1rem; }
+        #player-names { font-size: 1rem; opacity: 0.8; padding: 0 2rem; width: 800px; max-width: 90vw; display: flex; justify-content: space-between; }
+        #score-board { font-size: 2.5rem; margin-bottom: 1rem; width: 800px; max-width: 90vw; display: flex; justify-content: center; gap: 50px; }
+        .score-flash { animation: score-pulse 0.5s ease-out; }
+
+        /* --- Game Canvas and Wrapper --- */
+        #game-wrapper { position: relative; width: 800px; height: 400px; max-width: 90vw; }
+        #game-wrapper.shake { animation: screen-shake 0.15s linear; }
+        #gameCanvas { position: absolute; top: 0; left: 0; background-color: transparent; border: 4px solid var(--accent-color); border-radius: 10px; box-shadow: 0 0 30px var(--accent-color); z-index: 5; }
+        .goal-flash { position: absolute; top: 0; width: 50%; height: 100%; z-index: 6; pointer-events: none; opacity: 0; }
+        #left-goal-flash { left: 0; }
+        #right-goal-flash { right: 0; }
+        .goal-flash.animate { animation: goal-fade 0.5s ease-out; }
+
+        /* --- Overlays (Start, Pause, Game Over, Settings) --- */
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 20; transition: opacity 0.3s ease-out, visibility 0.3s; background-color: var(--panel-bg-color); visibility: visible; opacity: 1; }
+        .overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .overlay h2 { font-size: 2rem; margin-bottom: 0.5rem; color: var(--highlight-color); animation: pulse 2s infinite; }
+        .overlay p { font-size: 1.2rem; margin-bottom: 1.5rem; color: var(--text-color); }
+        #countdown-overlay { font-size: 8rem; color: var(--highlight-color); text-shadow: 0 0 20px var(--glow-color); z-index: 15; background-color: transparent; }
+
+        /* --- Settings & Shortcuts Panel Redesign --- */
+        .settings-panel, .shortcuts-panel { display: flex; flex-direction: column; gap: 1.5rem; padding: 2rem; background-color: var(--bg-color); border: 3px solid var(--accent-color); border-radius: 10px; box-shadow: 0 0 30px var(--glow-color); width: 90%; max-width: 700px; }
+        .settings-title { text-align: center; width: 100%; margin: 0 0 1rem 0; }
+        .settings-content { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; width: 100%; }
+        .settings-column { display: flex; flex-direction: column; gap: 1.5rem; }
+        .settings-column:first-child { border-right: 2px solid var(--accent-color); padding-right: 2rem; }
+        .settings-section-title { font-size: 1.1rem; color: var(--highlight-color); margin: 0 0 0.5rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--accent-color); }
+        .settings-group { display: flex; justify-content: space-between; align-items: center; gap: 1rem; font-size: 0.8rem; }
+        .selector-group { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+
+        /* Shortcuts List */
+        .shortcuts-panel { max-width: 550px; }
+        .shortcuts-list { list-style: none; padding: 0; margin: 0; text-align: left; width: 100%; }
+        .shortcuts-list li { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--accent-color); font-size: 0.9rem; }
+        .shortcuts-list li:last-child { border-bottom: none; }
+        .shortcuts-list span { color: var(--highlight-color); }
+
+        /* --- Buttons and Controls --- */
+        .control-button { padding: 10px 20px; font-family: var(--font-family); font-size: 1rem; color: var(--text-color); background-color: var(--accent-color); border: 2px solid var(--highlight-color); border-radius: 5px; cursor: pointer; transition: all 0.2s ease; }
+        .control-button:hover { background-color: var(--highlight-color); box-shadow: 0 0 15px var(--glow-color); }
+        .control-button.full-width { width: 100%; }
+        .icon-button { font-size: 1.5rem; padding: 5px 10px; }
+        .settings-btn { padding: 8px 10px; font-family: var(--font-family); font-size: 0.7rem; color: var(--text-color); background: var(--accent-color); border: 2px solid transparent; cursor: pointer; transition: all 0.3s ease; clip-path: polygon(10% 0%, 100% 0%, 90% 100%, 0% 100%); }
+        .settings-btn:hover:not(.selected):not(:disabled) { background: var(--highlight-color); color: var(--bg-color); }
+        .settings-btn.selected { background: var(--highlight-color); border-color: var(--text-color); box-shadow: 0 0 10px var(--glow-color); }
+        .control-button:disabled, .settings-btn:disabled { cursor: not-allowed; opacity: 0.5; background: #555; border-color: #777; }
+        .hidden { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+
+        /* Theme Swatches */
+        #theme-selector { gap: 10px; }
+        .theme-swatch { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s ease; }
+        .theme-swatch.selected { border-color: var(--highlight-color); transform: scale(1.1); box-shadow: 0 0 10px var(--glow-color); }
+
+        /* Toggle Switch */
+        .control-switch-container { display: flex; align-items: center; gap: 10px; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--accent-color); transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--highlight-color); }
+        input:checked + .slider:before { transform: translateX(22px); }
+        input:disabled + .slider { cursor: not-allowed; opacity: 0.5; }
+
+        /* Range Sliders for Volume */
+        input[type="range"] { -webkit-appearance: none; appearance: none; width: 120px; background: transparent; }
+        input[type="range"]::-webkit-slider-runnable-track { height: 8px; background: var(--accent-color); border-radius: 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; margin-top: -6px; height: 20px; width: 20px; background: var(--highlight-color); border-radius: 50%; cursor: pointer; border: 2px solid var(--text-color); }
+
+        /* --- Animations --- */
+        @keyframes flicker { 0%, 100% { text-shadow: 0 0 10px var(--glow-color), 0 0 20px var(--glow-color); opacity: 1; } 50% { text-shadow: 0 0 10px var(--glow-color), 0 0 25px var(--glow-color); opacity: 0.8; } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes score-pulse { 0% { transform: scale(1); color: var(--text-color); } 50% { transform: scale(1.3); color: var(--highlight-color); } 100% { transform: scale(1); color: var(--text-color); } }
+        @keyframes screen-shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-3px, 2px); } 50% { transform: translate(2px, -3px); } 75% { transform: translate(3px, 3px); } }
+        @keyframes goal-fade {
+            0% { opacity: 0; background: radial-gradient(circle, var(--highlight-color) 0%, transparent 10%); }
+            50% { opacity: 0.6; background: radial-gradient(circle, var(--highlight-color) 0%, transparent 60%); }
+            100% { opacity: 0; background: radial-gradient(circle, var(--highlight-color) 0%, transparent 100%); }
+        }
+        @keyframes move-vines { from { background-position: 0 0; } to { background-position: 120px 60px; } }
+        @keyframes sun-glow { from { opacity: 0.8; } to { opacity: 1; } }
+        @keyframes move-grid { from { background-position: 0 0; } to { background-position: 0 -80px; } }
+        @keyframes move-close-stars { from { background-position: 0 0, 0 0; } to { background-position: 250px 250px, 0 0; } }
+        @keyframes move-far-stars { from { background-position: 0 0, 0 0; } to { background-position: 0 0, 500px 500px; } }
+        @keyframes move-nebula-1 { from { transform: translate(-20%, -15%) scale(1.2); } to { transform: translate(15%, 20%) scale(1.5); } }
+        @keyframes move-nebula-2 { from { transform: translate(15%, 10%) scale(1.2); } to { transform: translate(-15%, -20%) scale(1); } }
+        @keyframes move-clouds { from { background-position: -400px 0; } to { background-position: 400px 0; } }
+        @keyframes move-clouds-day { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+        @keyframes move-clouds-day-2 { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+    </style>
 </head>
 <body>
     <h1 id="game-title">Vector Pong Arena</h1>
@@ -28,6 +168,8 @@
     </div>
 
     <div id="game-wrapper">
+        <div id="left-goal-flash" class="goal-flash"></div>
+        <div id="right-goal-flash" class="goal-flash"></div>
         <canvas id="gameCanvas"></canvas>
         <div id="countdown-overlay" class="overlay hidden"></div>
         <div id="start-screen" class="overlay">
@@ -40,67 +182,638 @@
         </div>
         <div id="game-over-screen" class="overlay hidden">
             <h2 id="winner-message"></h2>
-            <button id="play-again-button" class="control-button">Play Again</button>
+            <button id="play-again-button" class="control-button">Play Again (N)</button>
         </div>
     </div>
     
     <div id="settings-modal" class="overlay hidden">
         <div class="settings-panel">
-            <h2>Settings</h2>
-            
-            <div class="settings-group">
-                <label>Game Mode</label>
-                <div id="game-mode-selector" class="selector-group">
-                    <button class="settings-btn selected" data-mode="1p">1 Player</button>
-                    <button class="settings-btn" data-mode="2p">2 Player</button>
-                </div>
-            </div>
-
-            <div class="settings-group">
-                <label>Difficulty (1P)</label>
-                <div id="difficulty-selector" class="selector-group">
-                    <button class="settings-btn" data-difficulty="easy">Easy</button>
-                    <button class="settings-btn selected" data-difficulty="medium">Medium</button>
-                    <button class="settings-btn" data-difficulty="hard">Hard</button>
-                </div>
-            </div>
-
-             <div class="settings-group">
-                <label>Theme</label>
-                <div id="theme-selector" class="selector-group">
+            <h2 class="settings-title">Settings</h2>
+            <div class="settings-content">
+                <div class="settings-column">
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Gameplay</h3>
+                        <div class="settings-group">
+                            <label>Game Mode</label>
+                            <div id="game-mode-selector" class="selector-group">
+                                <button class="settings-btn selected" data-mode="1p">1 Player</button>
+                                <button class="settings-btn" data-mode="2p">2 Player</button>
+                            </div>
+                        </div>
+                         <div class="settings-group">
+                            <label>Difficulty (1P)</label>
+                            <div id="difficulty-selector" class="selector-group">
+                                <button class="settings-btn" data-difficulty="easy">Easy</button>
+                                <button class="settings-btn selected" data-difficulty="medium">Medium</button>
+                                <button class="settings-btn" data-difficulty="hard">Hard</button>
+                            </div>
+                        </div>
+                         <div class="settings-group">
+                            <label>P1 Controls</label>
+                            <div class="control-switch-container">
+                                <span>Mouse</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="control-toggle">
+                                    <span class="slider"></span>
+                                </label>
+                                <span>Keyboard</span>
+                            </div>
+                        </div>
                     </div>
-            </div>
-            
-            <div class="settings-group">
-                <label>P1 Controls</label>
-                <div class="control-switch-container">
-                    <span>Mouse</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="control-toggle">
-                        <span class="slider"></span>
-                    </label>
-                    <span>Keyboard</span>
+                     <div class="settings-section">
+                        <h3 class="settings-section-title">Visuals</h3>
+                        <div class="settings-group">
+                            <label>Theme</label>
+                            <div id="theme-selector" class="selector-group">
+                                </div>
+                        </div>
+                    </div>
                 </div>
-                 <small>(P2 uses ↑ and ↓ arrows)</small>
+                <div class="settings-column">
+                    <div class="settings-section">
+                         <h3 class="settings-section-title">Audio</h3>
+                         <div class="settings-group">
+                            <label>Master</label>
+                            <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5">
+                        </div>
+                        <div class="settings-group">
+                            <label>Music</label>
+                            <input type="range" id="music-volume" min="0" max="1" step="0.05" value="0.5">
+                        </div>
+                        <div class="settings-group">
+                            <label>Sound FX</label>
+                            <input type="range" id="sfx-volume" min="0" max="1" step="0.05" value="0.8">
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                         <h3 class="settings-section-title">More</h3>
+                         <div class="settings-group">
+                             <button id="shortcuts-button" class="control-button full-width">Controls (H)</button>
+                         </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="settings-group">
-                <label>Master Volume</label>
-                <input type="range" id="master-volume" min="0" max="1" step="0.05" value="0.5">
-            </div>
-            <div class="settings-group">
-                <label>Music</label>
-                <input type="range" id="music-volume" min="0" max="1" step="0.05" value="0.5">
-            </div>
-            <div class="settings-group">
-                <label>Sound FX</label>
-                <input type="range" id="sfx-volume" min="0" max="1" step="0.05" value="0.8">
-            </div>
-
-            <button id="close-settings-button" class="control-button">Close</button>
+            <button id="close-settings-button" class="control-button">Close (ESC)</button>
+        </div>
+    </div>
+    
+    <div id="shortcuts-modal" class="overlay hidden">
+        <div class="shortcuts-panel">
+            <h2>Controls & Shortcuts</h2>
+            <ul class="shortcuts-list">
+                <li><span>P1 Movement:</span> W / S keys or Mouse</li>
+                <li><span>P2 Movement:</span> Up / Down Arrow keys</li>
+                <li><span>Pause / Resume:</span> P or ESC</li>
+                <li><span>Toggle Settings:</span> S</li>
+                <li><span>Toggle This Menu:</span> H</li>
+                <li><span>New Game (on game over):</span> N</li>
+            </ul>
+            <button id="close-shortcuts-button" class="control-button">Close (ESC)</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Element Selection ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameWrapper = document.getElementById('game-wrapper');
+        const gameTitleElement = document.getElementById('game-title');
+        const winStreakDisplay = document.getElementById('win-streak-display');
+        const player1ScoreDisplay = document.getElementById('player1-score');
+        const player2ScoreDisplay = document.getElementById('player2-score');
+        const player1NameDisplay = document.getElementById('player1-name');
+        const player2NameDisplay = document.getElementById('player2-name');
+
+        // Overlays & Modals
+        const startScreen = document.getElementById('start-screen');
+        const pauseScreen = document.getElementById('pause-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const countdownOverlay = document.getElementById('countdown-overlay');
+        const settingsModal = document.getElementById('settings-modal');
+        const shortcutsModal = document.getElementById('shortcuts-modal');
+        const leftGoalFlash = document.getElementById('left-goal-flash');
+        const rightGoalFlash = document.getElementById('right-goal-flash');
+        
+        // Buttons
+        const settingsButton = document.getElementById('settings-button');
+        const closeSettingsButton = document.getElementById('close-settings-button');
+        const shortcutsButton = document.getElementById('shortcuts-button');
+        const closeShortcutsButton = document.getElementById('close-shortcuts-button');
+        const playAgainButton = document.getElementById('play-again-button');
+
+        // Settings Panel Elements
+        const themeSelector = document.getElementById('theme-selector');
+        const difficultyButtons = document.querySelectorAll('#difficulty-selector .settings-btn');
+        const gameModeButtons = document.querySelectorAll('#game-mode-selector .settings-btn');
+        const controlToggle = document.getElementById('control-toggle');
+        const masterVolumeSlider = document.getElementById('master-volume');
+        const musicVolumeSlider = document.getElementById('music-volume');
+        const sfxVolumeSlider = document.getElementById('sfx-volume');
+
+        // Messages
+        const winnerMessage = document.getElementById('winner-message');
+        const startPrompt = document.getElementById('start-prompt');
+
+        // --- Game Constants & State ---
+        const PADDLE_WIDTH = 12;
+        const BASE_PADDLE_HEIGHT = 80;
+        const BALL_RADIUS = 7.5;
+        const PLAYER_PADDLE_SPEED = 7;
+        const INITIAL_BALL_SPEED = 5;
+        const WINNING_SCORE = 11;
+        const POWERUP_SPAWN_INTERVAL = 10000;
+        const POWERUP_SIZE = 12;
+
+        const gameTitles = ['Hyper-Line', 'Astro-Bounce', 'Grid Runner', 'Vector Clash', 'Quantum Paddle', 'Zero-G Rally', 'Starfire Pong', 'Circuit Breaker', 'Nova Pong'];
+        const opponentNames = ['Vector', 'Cipher', 'Blaze', 'Rogue', 'Neon', 'Jolt', 'Apex', 'Pulse', 'Grid', 'Hex', 'Echo', 'Shift'];
+        const themes = [
+            { name: 'space', className: 'theme-space', colors: { '--bg-color': '#0c0c1d', '--panel-bg-color': 'rgba(12, 12, 29, 0.9)', '--table-color': '#16213e', '--accent-color': '#0f3460', '--highlight-color': '#e94560', '--text-color': '#ffffff', '--glow-color': 'rgba(233, 69, 96, 0.7)', }, particleColors: { trail: 'rgba(233, 69, 96, 0.5)', impact: '#fff' } },
+            { name: 'synthwave', className: 'theme-synthwave', colors: { '--bg-color': '#2c003e', '--panel-bg-color': 'rgba(44, 0, 62, 0.9)', '--table-color': 'rgba(22, 33, 62, 0)', '--accent-color': '#00ffff', '--highlight-color': '#ff00ff', '--text-color': '#ffffff', '--glow-color': 'rgba(255, 0, 255, 0.7)', }, particleColors: { trail: 'rgba(255, 0, 255, 0.5)', impact: '#00ffff' } },
+            { name: 'jungle', className: 'theme-jungle', colors: { '--bg-color': '#013220', '--panel-bg-color': 'rgba(1, 50, 32, 0.9)', '--table-color': 'rgba(0,0,0,0.2)', '--accent-color': '#39FF14', '--highlight-color': '#FDFF00', '--text-color': '#ffffff', '--glow-color': 'rgba(253, 255, 0, 0.7)', }, particleColors: { trail: 'rgba(253, 255, 0, 0.5)', impact: '#39FF14' } },
+            { name: 'bloodmoon', className: 'theme-bloodmoon', colors: { '--bg-color': '#1a1a1a', '--panel-bg-color': 'rgba(26, 26, 26, 0.9)', '--table-color': 'rgba(0,0,0,0.2)', '--accent-color': '#c0392b', '--highlight-color': '#ecf0f1', '--text-color': '#ffffff', '--glow-color': 'rgba(192, 57, 43, 0.7)', }, particleColors: { trail: 'rgba(236, 240, 241, 0.4)', impact: '#e74c3c' } },
+            { name: 'daylight', className: 'theme-daylight', colors: { '--bg-color': '#87CEEB', '--panel-bg-color': 'rgba(135, 206, 235, 0.8)', '--table-color': 'rgba(255,255,255,0.1)', '--accent-color': '#4682B4', '--highlight-color': '#FFFFFF', '--text-color': '#2c3e50', '--glow-color': 'rgba(255, 255, 255, 0.7)', }, particleColors: { trail: 'rgba(255, 255, 255, 0.5)', impact: '#4682B4' } }
+        ];
+        
+        const powerUpTypes = {
+            PADDLE_SIZE: { color: '#39FF14', symbol: '↕', duration: 8000 },
+            OPPONENT_SLOW: { color: '#FDFF00', symbol: '🐌', duration: 5000 },
+            SUPER_SPEED: { color: '#ff00ff', symbol: '⚡', duration: 6000 }
+        };
+
+        let gameState = {};
+        let player1 = {};
+        let player2 = {};
+        let ball = {};
+        let particles = [];
+        let powerUps = [];
+        let keysPressed = {};
+        let animationFrameId;
+        let powerUpTimer;
+
+        // --- Audio ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playSound(type) {
+            if (!audioCtx) return;
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.connect(g);
+            g.connect(audioCtx.destination);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+            if (type === 'hit') { o.type = 'square'; o.frequency.setValueAtTime(400, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1); }
+            else if (type === 'score') { o.type = 'sine'; o.frequency.setValueAtTime(800, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.2); }
+            else if (type === 'wall') { o.type = 'triangle'; o.frequency.setValueAtTime(150, audioCtx.currentTime); }
+            else if (type === 'powerup') { o.type = 'sawtooth'; o.frequency.setValueAtTime(900, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1); }
+            else if (type === 'ui') { o.type = 'sine'; o.frequency.setValueAtTime(600, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); }
+            
+            o.start(audioCtx.currentTime);
+            o.stop(audioCtx.currentTime + 0.2);
+        }
+        
+        // --- Game Setup & Reset ---
+        function setDefaultState() {
+            gameState = {
+                running: false,
+                paused: false,
+                winStreak: parseInt(localStorage.getItem('pongWinStreak')) || 0,
+                mode: '1p',
+                difficulty: 'medium',
+                controlMode: 'mouse',
+                theme: themes[0],
+                computerName: opponentNames[Math.floor(Math.random() * opponentNames.length)],
+            };
+            player1 = { x: 20, y: 0, score: 0, height: BASE_PADDLE_HEIGHT, speedModifier: 1, isHit: false };
+            player2 = { x: 0, y: 0, score: 0, height: BASE_PADDLE_HEIGHT, speedModifier: 1, isHit: false };
+            ball = { x: 0, y: 0, speedX: 0, speedY: 0, speedModifier: 1 };
+        }
+
+        function setCanvasSize() {
+            canvas.width = gameWrapper.offsetWidth;
+            canvas.height = gameWrapper.offsetHeight;
+            player1.y = canvas.height / 2 - player1.height / 2;
+            player2.x = canvas.width - 20 - PADDLE_WIDTH;
+            player2.y = canvas.height / 2 - player2.height / 2;
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+        }
+
+        function resetBall(serveDirection = 1) {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            let angle = Math.random() * Math.PI / 2 - Math.PI / 4;
+            ball.speedX = INITIAL_BALL_SPEED * Math.cos(angle) * serveDirection;
+            ball.speedY = INITIAL_BALL_SPEED * Math.sin(angle);
+            ball.speedModifier = 1;
+        }
+
+        function resetScores() {
+            player1.score = 0;
+            player2.score = 0;
+            player1ScoreDisplay.textContent = 0;
+            player2ScoreDisplay.textContent = 0;
+        }
+
+        function resetGame(isNewGame = true) {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (powerUpTimer) clearInterval(powerUpTimer);
+            
+            setDefaultState();
+            resetScores();
+            setCanvasSize();
+            resetBall();
+            powerUps = [];
+
+            updateUIForNewGame();
+            if (isNewGame) {
+                applyTheme(themes[Math.floor(Math.random() * themes.length)]);
+                enableSettings();
+            }
+
+            startScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('hidden');
+            pauseScreen.classList.add('hidden');
+            countdownOverlay.classList.add('hidden');
+            settingsModal.classList.add('hidden');
+            shortcutsModal.classList.add('hidden');
+            
+            draw();
+        }
+
+        function startGame() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            playSound('ui');
+            
+            gameState.running = true;
+            gameState.paused = false;
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            disableSettings();
+            
+            let countdown = 3;
+            countdownOverlay.textContent = countdown;
+            countdownOverlay.classList.remove('hidden');
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    countdownOverlay.textContent = countdown;
+                    playSound('ui');
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownOverlay.classList.add('hidden');
+                    resetBall(Math.random() > 0.5 ? 1 : -1);
+                    powerUpTimer = setInterval(spawnPowerUp, POWERUP_SPAWN_INTERVAL);
+                    gameLoop();
+                }
+            }, 1000);
+        }
+        
+        // --- Power-ups ---
+        function spawnPowerUp() {
+            if (powerUps.length > 0 || !gameState.running || gameState.paused) return;
+            const types = Object.keys(powerUpTypes);
+            const type = types[Math.floor(Math.random() * types.length)];
+            const x = Math.random() * (canvas.width / 2) + (canvas.width / 4);
+            const y = Math.random() * (canvas.height - 100) + 50;
+            powerUps.push({ x, y, type });
+        }
+
+        function activatePowerUp(powerUp, hittingPlayer) {
+            playSound('powerup');
+            const typeInfo = powerUpTypes[powerUp.type];
+            
+            switch (powerUp.type) {
+                case 'PADDLE_SIZE':
+                    hittingPlayer.height = BASE_PADDLE_HEIGHT * 1.5;
+                    setTimeout(() => hittingPlayer.height = BASE_PADDLE_HEIGHT, typeInfo.duration);
+                    break;
+                case 'OPPONENT_SLOW':
+                    const opponent = (hittingPlayer === player1) ? player2 : player1;
+                    opponent.speedModifier = 0.5;
+                    setTimeout(() => opponent.speedModifier = 1, typeInfo.duration);
+                    break;
+                case 'SUPER_SPEED':
+                    ball.speedModifier = 1.6;
+                    setTimeout(() => ball.speedModifier = 1, typeInfo.duration);
+                    break;
+            }
+        }
+
+        // --- Game Loop ---
+        function update() {
+            if (gameState.paused || !gameState.running) return;
+
+            // Player 1 Movement
+            if (gameState.controlMode === 'keyboard') {
+                if (keysPressed['w'] || keysPressed['W']) player1.y -= PLAYER_PADDLE_SPEED * player1.speedModifier;
+                if (keysPressed['s'] || keysPressed['S']) player1.y += PLAYER_PADDLE_SPEED * player1.speedModifier;
+            }
+            player1.y = Math.max(0, Math.min(player1.y, canvas.height - player1.height));
+
+            // Player 2 Movement
+            if (gameState.mode === '2p') {
+                if (keysPressed['ArrowUp']) player2.y -= PLAYER_PADDLE_SPEED * player2.speedModifier;
+                if (keysPressed['ArrowDown']) player2.y += PLAYER_PADDLE_SPEED * player2.speedModifier;
+            } else { // AI Movement
+                const difficultyMultiplier = { easy: 0.6, medium: 0.8, hard: 1.0 };
+                const aiSpeed = PLAYER_PADDLE_SPEED * difficultyMultiplier[gameState.difficulty] * player2.speedModifier;
+                if (player2.y + player2.height / 2 < ball.y - 10) player2.y += aiSpeed;
+                else if (player2.y + player2.height / 2 > ball.y + 10) player2.y -= aiSpeed;
+            }
+            player2.y = Math.max(0, Math.min(player2.y, canvas.height - player2.height));
+
+            // Ball Movement & Collision
+            const prevBallX = ball.x;
+            ball.x += ball.speedX * ball.speedModifier;
+            ball.y += ball.speedY * ball.speedModifier;
+            createParticles(ball.x, ball.y, 1, gameState.theme.particleColors.trail);
+            
+            if (ball.y - BALL_RADIUS <= 0 || ball.y + BALL_RADIUS >= canvas.height) { ball.speedY *= -1; playSound('wall'); }
+
+            if (ball.speedX < 0 && ball.x - BALL_RADIUS < player1.x + PADDLE_WIDTH && prevBallX - BALL_RADIUS >= player1.x + PADDLE_WIDTH && ball.y > player1.y && ball.y < player1.y + player1.height) {
+                const impact = (ball.y - (player1.y + player1.height / 2)) / (player1.height / 2);
+                ball.speedX = Math.abs(ball.speedX) * 1.05;
+                ball.speedY = impact * INITIAL_BALL_SPEED * 1.5;
+                handlePaddleHit(player1);
+            }
+            if (ball.speedX > 0 && ball.x + BALL_RADIUS > player2.x && prevBallX + BALL_RADIUS <= player2.x && ball.y > player2.y && ball.y < player2.y + player2.height) {
+                const impact = (ball.y - (player2.y + player2.height / 2)) / (player2.height / 2);
+                ball.speedX = -Math.abs(ball.speedX) * 1.05;
+                ball.speedY = impact * INITIAL_BALL_SPEED * 1.5;
+                handlePaddleHit(player2);
+            }
+
+            if (ball.x < 0) handleScore(player2, false);
+            if (ball.x > canvas.width) handleScore(player1, true);
+
+            for (let i = powerUps.length - 1; i >= 0; i--) {
+                const p = powerUps[i];
+                const dx = ball.x - p.x;
+                const dy = ball.y - p.y;
+                if (Math.sqrt(dx * dx + dy * dy) < BALL_RADIUS + POWERUP_SIZE) {
+                    const hittingPlayer = ball.speedX > 0 ? player2 : player1;
+                    activatePowerUp(p, hittingPlayer);
+                    powerUps.splice(i, 1);
+                }
+            }
+            
+            for (let i = particles.length - 1; i >= 0; i--) { particles[i].update(); if (particles[i].life <= 0) particles.splice(i, 1); }
+        }
+
+        function draw() {
+            ctx.fillStyle = gameState.theme.name === 'synthwave' ? 'rgba(44, 0, 62, 0.1)' : 'rgba(22, 33, 62, 0.25)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(15, 52, 96, 0.5)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath(); ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height); ctx.stroke(); ctx.setLineDash([]);
+            
+            particles.forEach(p => p.draw());
+            
+            ctx.globalAlpha = 1; ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
+            ctx.fillStyle = player1.isHit ? 'var(--highlight-color)' : '#fff';
+            ctx.fillRect(player1.x, player1.y, PADDLE_WIDTH, player1.height);
+            ctx.fillStyle = player2.isHit ? 'var(--highlight-color)' : '#fff';
+            ctx.fillRect(player2.x, player2.y, PADDLE_WIDTH, player2.height);
+            
+            ctx.fillStyle = 'var(--highlight-color)'; ctx.shadowColor = 'var(--glow-color)'; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+
+            powerUps.forEach(p => {
+                const typeInfo = powerUpTypes[p.type];
+                ctx.fillStyle = typeInfo.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, POWERUP_SIZE, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.font = '12px "Press Start 2P"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(typeInfo.symbol, p.x, p.y + 1);
+            });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        // --- Scoring & Game State Changes ---
+        function handlePaddleHit(player) {
+            player.isHit = true;
+            setTimeout(() => player.isHit = false, 150);
+            playSound('hit');
+            createParticles(ball.x, ball.y, 20, gameState.theme.particleColors.impact);
+        }
+
+        function handleScore(scoringPlayer, isPlayer1) {
+            playSound('score');
+            gameWrapper.classList.add('shake');
+            setTimeout(() => gameWrapper.classList.remove('shake'), 150);
+            
+            const flashElement = isPlayer1 ? rightGoalFlash : leftGoalFlash;
+            flashElement.classList.add('animate');
+            setTimeout(() => flashElement.classList.remove('animate'), 500);
+
+            scoringPlayer.score++;
+            const displayElement = isPlayer1 ? player1ScoreDisplay : player2ScoreDisplay;
+            displayElement.textContent = scoringPlayer.score;
+            displayElement.classList.add('score-flash');
+            setTimeout(() => displayElement.classList.remove('score-flash'), 500);
+            
+            powerUps = [];
+
+            if (scoringPlayer.score >= WINNING_SCORE) {
+                endGame(isPlayer1);
+            } else {
+                gameState.paused = true;
+                setTimeout(() => {
+                    resetBall(isPlayer1 ? -1 : 1);
+                    gameState.paused = false;
+                }, 1000);
+            }
+        }
+
+        function endGame(player1Won) {
+            gameState.running = false;
+            if (powerUpTimer) clearInterval(powerUpTimer);
+            cancelAnimationFrame(animationFrameId);
+            
+            if (player1Won) {
+                gameState.winStreak++;
+                winnerMessage.textContent = "You Win!";
+            } else {
+                gameState.winStreak = 0;
+                const winnerName = gameState.mode === '2p' ? 'Player 2' : gameState.computerName;
+                winnerMessage.textContent = `${winnerName} Wins!`;
+            }
+            localStorage.setItem('pongWinStreak', gameState.winStreak);
+            winStreakDisplay.textContent = `Win Streak: ${gameState.winStreak}`;
+            
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        // --- UI & Event Handlers ---
+        function applyTheme(theme) {
+            gameState.theme = theme;
+            document.body.className = theme.className;
+            for (const colorVar in theme.colors) {
+                document.documentElement.style.setProperty(colorVar, theme.colors[colorVar]);
+            }
+            document.querySelectorAll('.theme-swatch').forEach(swatch => {
+                swatch.classList.toggle('selected', swatch.dataset.themeName === theme.name);
+            });
+        }
+
+        function togglePause() {
+            if (!gameState.running) return;
+            gameState.paused = !gameState.paused;
+            if (gameState.paused) {
+                pauseScreen.classList.remove('hidden');
+                cancelAnimationFrame(animationFrameId);
+            } else {
+                pauseScreen.classList.add('hidden');
+                gameLoop();
+            }
+        }
+        
+        function toggleSettingsModal(show) {
+            settingsModal.classList.toggle('hidden', !show);
+             if (show && gameState.running && !gameState.paused) {
+                togglePause();
+            } else if (!show && gameState.running && gameState.paused && gameOverScreen.classList.contains('hidden')) {
+                togglePause();
+            }
+        }
+        
+        function toggleShortcutsModal(show) {
+            shortcutsModal.classList.toggle('hidden', !show);
+            if (show && gameState.running && !gameState.paused) {
+                togglePause();
+            } else if (!show && gameState.running && gameState.paused && gameOverScreen.classList.contains('hidden')) {
+                togglePause();
+            }
+        }
+        
+        function updateUIForNewGame() {
+            if (gameState.mode === '1p') {
+                player1NameDisplay.textContent = 'Player 1';
+                player2NameDisplay.textContent = gameState.computerName;
+                startPrompt.textContent = `You vs. ${gameState.computerName}`;
+                difficultyButtons.forEach(b => b.disabled = false);
+            } else {
+                player1NameDisplay.textContent = 'Player 1';
+                player2NameDisplay.textContent = 'Player 2';
+                startPrompt.textContent = 'Player 1 vs. Player 2';
+                difficultyButtons.forEach(b => b.disabled = true);
+            }
+        }
+
+        function enableSettings() {
+            document.querySelectorAll('.settings-btn, .theme-swatch, #settings-modal input').forEach(el => el.disabled = false);
+            updateUIForNewGame();
+        }
+
+        function disableSettings() {
+            document.querySelectorAll('.settings-btn, .theme-swatch, #settings-modal input').forEach(el => el.disabled = true);
+        }
+        
+        // --- Particle Class ---
+        class Particle {
+            constructor(x, y, color) { this.x = x; this.y = y; this.size = Math.random() * 4 + 1; this.speedX = (Math.random() - 0.5) * 3; this.speedY = (Math.random() - 0.5) * 3; this.color = color; this.life = 1; }
+            update() { this.x += this.speedX; this.y += this.speedY; this.life -= 0.04; }
+            draw() { ctx.fillStyle = this.color; ctx.globalAlpha = this.life; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+        }
+        function createParticles(x, y, count, color) { for (let i = 0; i < count; i++) { particles.push(new Particle(x, y, color)); } }
+
+        // --- Initializer ---
+        function init() {
+            setDefaultState();
+
+            themes.forEach(theme => {
+                const swatch = document.createElement('button');
+                swatch.className = 'theme-swatch';
+                swatch.dataset.themeName = theme.name;
+                swatch.style.background = theme.colors['--bg-color'];
+                 if (theme.name === 'synthwave') swatch.style.background = `linear-gradient(to bottom, #2c003e, #e94560)`;
+                swatch.addEventListener('click', (e) => {
+                    if(e.target.disabled) return;
+                    playSound('ui');
+                    applyTheme(theme);
+                });
+                themeSelector.appendChild(swatch);
+            });
+            
+            setCanvasSize();
+            gameTitleElement.textContent = gameTitles[Math.floor(Math.random() * gameTitles.length)];
+            winStreakDisplay.textContent = `Win Streak: ${gameState.winStreak}`;
+            resetGame(true);
+
+            // --- Event Listeners ---
+            window.addEventListener('resize', () => { setCanvasSize(); draw(); });
+            
+            document.addEventListener('keydown', (e) => { 
+                keysPressed[e.key] = true;
+                const key = e.key.toLowerCase();
+                
+                if (key === 'escape') {
+                    if (!shortcutsModal.classList.contains('hidden')) { toggleShortcutsModal(false); return; }
+                    if (!settingsModal.classList.contains('hidden')) { toggleSettingsModal(false); return; }
+                }
+
+                if (!settingsModal.classList.contains('hidden') || !shortcutsModal.classList.contains('hidden')) return;
+
+                if (key === 'p' || key === 'escape') togglePause();
+                if (key === 's') toggleSettingsModal(true);
+                if (key === 'h') toggleShortcutsModal(true);
+                if (key === 'n' && !gameOverScreen.classList.contains('hidden')) resetGame(true);
+            });
+            
+            document.addEventListener('keyup', (e) => { keysPressed[e.key] = false; });
+            
+            canvas.addEventListener('mousemove', (e) => {
+                if (gameState.controlMode !== 'mouse' || !gameState.running || gameState.paused) return;
+                const rect = canvas.getBoundingClientRect();
+                player1.y = e.clientY - rect.top - player1.height / 2;
+            });
+            
+            startScreen.addEventListener('click', startGame);
+            playAgainButton.addEventListener('click', () => resetGame(true));
+            settingsButton.addEventListener('click', () => toggleSettingsModal(true));
+            closeSettingsButton.addEventListener('click', () => toggleSettingsModal(false));
+            shortcutsButton.addEventListener('click', () => toggleShortcutsModal(true));
+            closeShortcutsButton.addEventListener('click', () => toggleShortcutsModal(false));
+
+            difficultyButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    if (e.target.disabled) return;
+                    playSound('ui');
+                    difficultyButtons.forEach(btn => btn.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    gameState.difficulty = e.target.dataset.difficulty;
+                });
+            });
+
+            gameModeButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    if(e.target.disabled) return;
+                    playSound('ui');
+                    gameModeButtons.forEach(btn => btn.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    gameState.mode = e.target.dataset.mode;
+                    updateUIForNewGame();
+                });
+            });
+
+            controlToggle.addEventListener('change', (e) => {
+                if(e.target.disabled) return;
+                playSound('ui');
+                gameState.controlMode = e.target.checked ? 'keyboard' : 'mouse';
+            });
+        }
+
+        // Run the initializer
+        init();
+    });
+    </script>
 </body>
 </html>
